@@ -10,7 +10,3 @@ const channelRouter = require('./routes/channels') // channel-demo 소환
 
 app.use("/", userRouter)
 app.use("/channels", channelRouter)
-
-
-let test = "test1"
-console.log(Boolean(+test))
