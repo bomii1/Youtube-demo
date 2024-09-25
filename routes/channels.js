@@ -8,17 +8,25 @@ const router = express.Router()
 
 router.use(express.json()) // json을 json 바디에서 꺼내서 편하게 쓸 수 있게 해주는 모듈
 
+// 모듈화를 시켜서 validate 변수에 담음
+const validate = (req, res, next) => {
+    const err = validationResult(req)
+
+    if (err.isEmpty()) {
+        return next()
+    } else {
+        return res.status(400).json(err.array()) // 다음 할 일(미들웨어, 함수) 찾아가라
+    }
+}
+// 라우터에서 get 메소드는 콜백함수를 부르기 전에 할 일이 있었고, 그 다음이 콜백함수
 router
     .route('/')
     .get(
-        body('user_id').notEmpty().isInt().withMessage('숫자 입력 필요')
-        ,(req, res) => {
-            const err = validationResult(req)
-
-            if (!err.isEmpty()) {
-                return res.status(400).json(err.array())
-            }
-
+        [
+            body('user_id').notEmpty().isInt().withMessage('숫자 입력 필요'),
+            validate
+        ]
+        ,(req, res, next) => {
             let {user_id} = req.body
 
             let sql = `SELECT * FROM channels WHERE user_id = ?`
@@ -38,15 +46,12 @@ router
             )
     }) // 채널 전체 조회
     .post(
-        [body('user_id').notEmpty().isInt().withMessage('숫자 입력 필요'),
-         body('name').notEmpty().isString().withMessage('문자 입력 필요')]
+        [
+            body('user_id').notEmpty().isInt().withMessage('숫자 입력 필요'),
+            body('name').notEmpty().isString().withMessage('문자 입력 필요'),
+            validate
+        ]
         , (req, res) => {
-                const err = validationResult(req) // 유효성 검사했는데 에러가 났을 때
-
-                if (!err.isEmpty()) {
-                    return res.status(400).json(err.array())
-                }
-            
                 const {name, user_id} = req.body
 
                 let sql = `INSERT INTO channels (name, user_id) VALUES (?, ?)`
@@ -57,7 +62,6 @@ router
                             console.log(err)
                             return res.status(400).end()
                         }
-
                         res.status(201).json(results)
                     }
                 )
@@ -67,14 +71,11 @@ router
 router
     .route('/:id')
     .get(
-        param('id').notEmpty().withMessage('채널 id 필요')
+        [
+            param('id').notEmpty().withMessage('채널 id 필요'),
+            validate
+        ]
         ,(req, res) => {
-            const err = validationResult(req)
-
-            if (!err.isEmpty()) {
-                return res.status(400).json(err.array())
-            }
-
             let {id} = req.params
             id = parseInt(id)
 
@@ -85,7 +86,6 @@ router
                         console.log(err)
                         res.status(400).end()
                     }
-
                     if (results.length) {
                         res.status(200).json(...results)
                     } else {
@@ -95,15 +95,12 @@ router
             )
     }) // 채널 개별 조회
     .put(
-        [param('id').notEmpty().withMessage('채널 id 필요'),
-         body('name').notEmpty().isString().withMessage('채널명 오류')]
+        [
+            param('id').notEmpty().withMessage('채널 id 필요'),
+            body('name').notEmpty().isString().withMessage('채널명 오류'),
+            validate
+        ]
         ,(req, res) => {
-            const err = validationResult(req)
-
-            if (!err.isEmpty()) {
-                return res.status(400).json(err.array())
-            }
-
             let {id} = req.params
             id = parseInt(id)
             let {name} = req.body
@@ -126,20 +123,15 @@ router
             )
         }) // 채널 개별 수정
     .delete(
-        param('id').notEmpty().withMessage('채널 id 필요')
+        [
+            param('id').notEmpty().withMessage('채널 id 필요'),
+            validate
+        ]
         ,(req, res) => {
-            const err = validationResult(req)
-
-            if (!err.isEmpty()) {
-                return res.status(400).json(err.array())
-            }
-
             let {id} = req.params
             id = parseInt(id)
 
             const sql = `DELETE FROM channels WHERE id = ?`
-            const channel = db.get(id)
-
             conn.query(sql, id,
                 function(err, results) {
                     if (err) {
