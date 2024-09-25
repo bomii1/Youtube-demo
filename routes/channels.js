@@ -51,7 +51,7 @@ router
             body('name').notEmpty().isString().withMessage('문자 입력 필요'),
             validate
         ]
-        , (req, res) => {
+        , (req, res, next) => {
                 const {name, user_id} = req.body
 
                 let sql = `INSERT INTO channels (name, user_id) VALUES (?, ?)`
@@ -75,7 +75,7 @@ router
             param('id').notEmpty().withMessage('채널 id 필요'),
             validate
         ]
-        ,(req, res) => {
+        ,(req, res, next) => {
             let {id} = req.params
             id = parseInt(id)
 
@@ -100,7 +100,7 @@ router
             body('name').notEmpty().isString().withMessage('채널명 오류'),
             validate
         ]
-        ,(req, res) => {
+        ,(req, res, next) => {
             let {id} = req.params
             id = parseInt(id)
             let {name} = req.body
@@ -127,7 +127,7 @@ router
             param('id').notEmpty().withMessage('채널 id 필요'),
             validate
         ]
-        ,(req, res) => {
+        ,(req, res, next) => {
             let {id} = req.params
             id = parseInt(id)
 
