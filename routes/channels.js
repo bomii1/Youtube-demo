@@ -110,6 +110,7 @@ router
 
             conn.query(sql, values,
                 function(err, results) {
+                    console.log('채널명 수정', results)
                     if (err) {
                         console.log(err)
                         res.status(400).end()

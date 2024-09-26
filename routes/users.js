@@ -1,20 +1,28 @@
 // express 모듈 셋팅
-const express = require('express')
-const conn = require('../mariadb')
-const router = express.Router()
-const {body, param, validationResult} = require('express-validator') 
-router.use(express.json())
+const express = require('express');
+const conn = require('../mariadb');
+const router = express.Router();
+const {body, param, validationResult} = require('express-validator');
+
+// jwt 모듈
+const jwt = require('jsonwebtoken');
+
+// dotenv 모듈
+const dotenv = require('dotenv');
+dotenv.config();
+
+router.use(express.json());
 
 // 모듈화를 시켜서 validate 변수에 담음
 const validate = (req, res, next) => {
-    const err = validationResult(req)
+    const err = validationResult(req);
 
     if (err.isEmpty()) {
-        return next()
+        return next();
     } else {
-        return res.status(400).json(err.array()) // 다음 할 일(미들웨어, 함수) 찾아가라
+        return res.status(400).json(err.array()); // 다음 할 일(미들웨어, 함수) 찾아가라
     }
-}
+};
 
 router
     .route('/login')
@@ -34,10 +42,29 @@ router
                         return res.status(400).end()
                     }
                     let loginUser = results[0]
+
                     if (loginUser && loginUser.password === password) {
-                        res.status(200).json({ message: `${loginUser.name}님 로그인이 성공하였습니다.` })
+                        // token 발급
+                        const token = jwt.sign({
+                            email: loginUser.email,
+                            name: loginUser.name
+                        }, process.env.PRIVATE_KEY, {
+                            expiresIn: '5m',
+                            issuer: 'test'
+                        });
+                        console.log(token);
+
+                        res.cookie("token", token, {
+                            httpOnly: true
+                        }); // 쿠키에 토큰 담음
+
+                        res.status(200).json({
+                            message: `${loginUser.name}님 로그인이 성공하였습니다.`
+                        })
                     } else {
-                        res.status(404).json({ message: '이메일 또는 비밀번호가 틀렸습니다.' })
+                        res.status(403).json({
+                            message: '이메일 또는 비밀번호가 틀렸습니다.'
+                        })
                     }
                 }
             )
@@ -63,6 +90,7 @@ router
                     if (err) {
                         return res.status(400).end()
                     }
+                    console.log('회원가입', results)
                     res.status(201).json({ message: `${name}님 환영합니다. `})
                 }
             )
@@ -81,13 +109,13 @@ router
             let sql = `SELECT * FROM users WHERE email = ?`
             let values = [email]
             conn.query(sql, values,
-                function(err, results) {
+                function(err, results,fields) {
                     if (err) {
                         return res.status(400).end()
                     }
                     if (results.length) {
                         res.status(200).json(...results)
-                        console.log(results)
+                        console.log('회원 개별 조회', results, fields.length)
                     } else {
                         res.status(404).json({ message: '회원 정보가 없습니다.'})
                     }
@@ -106,6 +134,7 @@ router
             let values = [email]
             conn.query(sql, values,
                 function(err, results) {
+                    console.log('탈퇴', results)
                     if (err) {
                         return res.status(400).end()
                     }
